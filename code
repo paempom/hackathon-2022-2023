@@ -1,0 +1,520 @@
+#Barberry Yu, Maanasa Surneni, Allison Trieu
+#7 Jan 2022
+#2022-2023 hackathon submission
+
+#imports
+import pygame
+import sys
+from pygame.locals import *
+import random
+import time
+import os
+
+SCREEN = pygame.display.set_mode((900, 500))
+
+pygame.display.set_caption("Control 'F'")
+
+BG = pygame.image.load(os.path.join('assets', 'Background.png'))
+
+score=0
+
+#platformer
+    FPS = 60
+    FramePerSec = pygame.time.Clock()
+
+    width = 500
+    height = 900
+    speed = 5
+
+    font = pygame.font.SysFont(None, 40)
+    fontSmall = pygame.font.SysFont(None, 20)
+    endMessage = font.render("You rang the alarm!", True, (0, 0, 0))
+    endScore = fontSmall.render("You won $", True, (255, 255, 255))
+
+    screen.fill((0, 0, 0))
+    pygame.display.set_caption("Alarm Rain")
+
+    class Enemy(pygame.sprite.Sprite):
+        def __init__(self):
+            super().__init__()
+            self.image = pygame.image.load(os.path.join('Assets', 'light.png'))
+            self.image = pygame.transform.scale(self.image, (64, 64))
+            self.rect = self.image.get_rect()
+            self.rect.center = (random.randint(40, width - 40), 0)
+
+        def move(self):
+            global score
+            self.rect.move_ip(0, speed)
+            if (self.rect.top > height):
+                score += 100
+                self.rect.top = 0
+                self.rect.center = (random.randint(40, width - 40), 0)
+
+    class Player(pygame.sprite.Sprite):
+        def __init__(self):
+            super().__init__()
+            self.image = pygame.image.load(os.path.join('Assets', 'robber.png.crdownload'))
+            self.image = pygame.transform.scale(self.image, (80, 80))
+            self.rect = self.image.get_rect()
+            self.rect.center = (250, 400)
+
+        def move(self):
+            pressed_keys = pygame.key.get_pressed()
+            if self.rect.left > 0:
+                if pressed_keys[pygame.K_LEFT]:
+                    self.rect.move_ip(-5, 0)
+                    self.image.move_ip(-5, 0)
+            if self.rect.right < height:
+                if pressed_keys[pygame.K_RIGHT]:
+                    self.rect.move_ip(5, 0)
+                    self.image.move_ip(5, 0)
+
+    P1 = Player()
+    E1 = Enemy()
+
+    enemies = pygame.sprite.Group()
+    enemies.add(E1)
+    allSprites = pygame.sprite.Group()
+    allSprites.add(P1)
+    allSprites.add(E1)
+
+    incSpeed = pygame.USEREVENT + 1
+    pygame.time.set_timer(incSpeed, 1000)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == incSpeed:
+                speed += 0.5
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+
+        screen.fill((0, 0, 0))
+        scores = fontSmall.render(str(score), True, (255, 255, 255))
+        screen.blit("$", (7, 10))
+        screen.blit(scores, (15, 10))
+
+        for entity in allSprites:
+            screen.blit(entity.image, entity.rect)
+            entity.move()
+
+        if pygame.sprite.spritecollideany(P1, enemies):
+            screen.fill((255, 0, 0))
+            screen.blit(endMessage, (30, 160))
+            screen.blit(endScore, (30, 250))
+            screen.blit(scores, (115, 250))
+
+            pygame.display.update()
+            for entity in allSprites:
+                entity.kill()
+            time.sleep(2)
+            pygame.quit()
+            sys.exit()
+
+        pygame.display.update()
+        FramePerSec.tick(FPS)
+
+#snake game
+from pygame.math import Vector2
+def full ():
+    class SNAKE:
+        def __init__(self):
+            self.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
+            self.direction = Vector2(1, 0)
+            self.new_block = False
+        def draw_snake(self):
+            for block in self.body:
+                block_rect = pygame.Rect(int(block.x * cell_size_x), int(block.y * cell_size_y), cell_size_x, cell_size_y)
+                pygame.draw.rect(screen, (pygame.Color("white")), block_rect)
+        def move_snake(self):
+            if self.new_block == True:
+                body_copy = self.body[:]  # second to  last
+                body_copy.insert(0, body_copy[0] + self.direction)
+                self.body = body_copy[:]
+                self.new_block = False
+            else:
+                body_copy = self.body[:-1] # second to  last
+                body_copy.insert(0, body_copy[0] + self.direction)
+                self.body = body_copy[:]
+    
+        def add_block(self):
+            self.new_block = True
+    
+    class FRUIT:
+        def __init__(self):
+            self.randomize()
+    
+        def draw_fruit(self):
+            fruit_rect = pygame.Rect(int(self.pos.x * cell_size_x), int(self.pos.y * cell_size_y), cell_size_x, cell_size_y)
+            screen.blit(apple, fruit_rect)
+           # pygame.draw.rect(screen, pygame.Color("green"), fruit_rect)
+        def randomize(self):
+            self.x = random.randint(0, cell_number - 1)
+            self.y = random.randint(0, cell_number - 1)
+            self.pos = Vector2(self.x, self.y)
+    
+    
+    class MAIN:
+        def __init__(self):
+            self.snake = SNAKE()
+            self.fruit = FRUIT()
+        def update(self):
+            self.snake.move_snake()
+            self.check_collision()
+            self.check_fail()
+        def draw_elements(self):
+            self.fruit.draw_fruit()
+            self.snake.draw_snake()
+            self.draw_score()
+        def check_collision(self):
+            if self.fruit.pos == self.snake.body[0]:
+                self.fruit.randomize()
+                self.snake.add_block()
+        def check_fail(self):
+            if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
+                self.game_over()
+            for block in self.snake.body[1:]:
+                if block == self.snake.body[0]:
+                    self.game_over()
+        def game_over(self):
+            score+=total_money
+            pygame.quit()
+            sys.exit()
+        def draw_score(self):
+            score_text = str(len(self.snake.body) - 3)
+            total_money = int(score_text)
+            score_surface = game_font.render(score_text,True,pygame.Color("white"))
+            score_x = int(cell_size_x * cell_number - 40)
+            score_y = int(cell_size_y * cell_number - 20)
+            score_rect = score_surface.get_rect(center = (score_x, score_y))
+            screen.blit(score_surface, score_rect)
+          
+    cell_size_x = 45
+    cell_size_y = 25
+    cell_number = 20
+    screen = pygame.display.set_mode((cell_number * cell_size_x, cell_number * cell_size_y))
+    clock = pygame.time.Clock()
+    apple = pygame.image.load(os.path.join('Assets', 'money.png'))
+    apple=pygame.transform.scale(apple, (45,25))
+    game_font = pygame.font.Font(None, 40)
+    SCREEN_UPDATE = pygame.USEREVENT
+    pygame.time.set_timer(SCREEN_UPDATE, 150)
+    main_game = MAIN()
+    
+    
+    global total_money
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == SCREEN_UPDATE:
+                main_game.update()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    if main_game.snake.direction.y != 1:
+                        main_game.snake.direction = Vector2(0, -1)
+                if event.key == pygame.K_RIGHT:
+                    if main_game.snake.direction.x != -1:
+                        main_game.snake.direction = Vector2(1, 0)
+                if event.key == pygame.K_DOWN:
+                    if main_game.snake.direction.y != -1:
+                        main_game.snake.direction = Vector2(0, 1)
+                if event.key == pygame.K_LEFT:
+                    if main_game.snake.direction.x != 1:
+                        main_game.snake.direction = Vector2(-1, 0)
+        screen.fill((pygame.Color("black")))
+        main_game.draw_elements()
+    
+        pygame.display.update()
+        clock.tick(60)
+full()
+
+#tictactoe
+class Square(pygame.sprite.Sprite):
+
+    def __init__(self, x_id, y_id, number):
+        super().__init__()
+        self.width = 120
+        self.height = 120
+        self.x = x_id * self.width
+        self.y = y_id * self.height
+        self.content = ''
+        self.number = number
+        self.image = blank_image
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.center = (self.x, self.y)
+
+    def clicked(self, x_val, y_val):
+        global turn, won
+
+        if self.content == '':
+            if self.rect.collidepoint(x_val, y_val):
+                self.content = turn
+                board[self.number] = turn
+
+                if turn == 'x':
+                    self.image = x_image
+                    self.image = pygame.transform.scale(self.image,
+                                                   (self.width, self.height))
+                    turn = 'o'
+                    checkWinner('x')
+
+                    if not won:
+                        CompMove()
+
+                else:
+                    self.image = o_image
+                    self.image = pygame.transform.scale(self.image,
+                                                   (self.width, self.height))
+                    turn = 'x'
+                    checkWinner('o')
+
+
+def checkWinner(player):
+    global background, won, startX, startY, endX, endY
+
+    for i in range(8):
+        if board[winners[i][0]] == player and board[
+                winners[i][1]] == player and board[winners[i][2]] == player:
+            won = True
+            getPos(winners[i][0], winners[i][2])
+            break
+
+    if won:
+        Update()
+        drawLine(startX, startY, endX, endY)
+
+        square_group.empty()
+        background = pygame.image.load(
+            os.path.join('Assets',
+                         player.upper() + ' Wins.png'))
+        background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+        score*=2
+
+
+def Winner(player):
+    global compMove, move
+
+    for i in range(8):
+        if board[winners[i][0]] == player and board[
+                winners[i][1]] == player and board[winners[i][2]] == '':
+            compMove = winners[i][2]
+            move = False
+
+        elif board[winners[i][0]] == player and board[
+                winners[i][1]] == '' and board[winners[i][2]] == player:
+            compMove = winners[i][1]
+            move = False
+
+        elif board[winners[i][0]] == '' and board[
+                winners[i][1]] == player and board[winners[i][2]] == player:
+            compMove = winners[i][0]
+            move = False
+
+
+def CompMove():
+    global move, background
+
+    move = True
+
+    if move:
+        Winner('o')
+
+    if move:
+        Winner('x')
+
+    if move:
+        checkDangerPos()
+
+    if move:
+        checkCentre()
+
+    if move:
+        checkCorner()
+
+    if move:
+        checkEdge()
+
+    if not move:
+        for square in squares:
+            if square.number == compMove:
+                square.clicked(square.x, square.y)
+
+    else:
+        Update()
+        time.sleep(1)
+        square_group.empty()
+        background = pygame.image.load(os.path.join('Assets', 'Tie Game.png'))
+        background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
+
+def checkDangerPos():
+    global move, compMove
+
+    if board == dangerPos1:
+        compMove = 2
+        move = False
+
+    elif board == dangerPos2:
+        compMove = 4
+        move = False
+
+    elif board == dangerPos3:
+        compMove = 1
+        move = False
+
+    elif board == dangerPos4:
+        compMove = 4
+        move = False
+
+    elif board == dangerPos5:
+        compMove = 7
+        move = False
+
+    elif board == dangerPos6:
+        compMove = 9
+        move = False
+
+    elif board == dangerPos7:
+        compMove = 9
+        move = False
+
+    elif board == dangerPos8:
+        compMove = 7
+        move = False
+
+    elif board == dangerPos9:
+        compMove = 9
+        move = False
+
+
+def checkCentre():
+    global compMove, move
+
+    if board[5] == '':
+        compMove = 5
+        move = False
+
+
+def checkCorner():
+    global compMove, move
+
+    for i in range(1, 11, 2):
+        if i != 5:
+            if board[i] == '':
+                compMove = i
+                move = False
+                break
+
+
+def checkEdge():
+    global compMove, move
+
+    for i in range(2, 10, 2):
+        if board[i] == '':
+            compMove = i
+            move = False
+            break
+
+
+def getPos(n1, n2):
+    global startX, startY, endX, endY
+
+    for sqs in squares:
+        if sqs.number == n1:
+            startX = sqs.x
+            startY = sqs.y
+
+        elif sqs.number == n2:
+            endX = sqs.x
+            endY = sqs.y
+
+
+def drawLine(x1, y1, x2, y2):
+    pygame.draw.line(win, (0, 0, 0), (x1, y1), (x2, y2), 15)
+    pygame.display.update()
+    time.sleep(2)
+
+
+def Update():
+    win.blit(background, (0, 0))
+    square_group.draw(win)
+    square_group.update()
+    pygame.display.update()
+
+#The width and the height of the game
+WIDTH, HEIGHT = 500, 500
+
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('Tic Tac Toe')
+clock = pygame.time.Clock()
+
+#images used
+blank_image = pygame.image.load(os.path.join('Assets', 'board.png'))
+x_image = pygame.image.load(os.path.join('Assets', 'money.png'))
+o_image = pygame.image.load(os.path.join('Assets', 'flame.png'))
+background = pygame.image.load(os.path.join('Assets', 'background.jpg'))
+
+background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
+move = True
+won = False
+compMove = 5
+
+square_group = pygame.sprite.Group()
+squares = []
+
+winners = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [1, 4, 7], [2, 5, 8], [3, 6, 9],
+           [1, 5, 9], [3, 5, 7]]
+board = ['' for i in range(10)]
+
+dangerPos1 = ['', 'x', '', '', '', 'o', '', '', '', 'x']
+dangerPos2 = ['', '', '', 'x', '', 'o', '', 'x', '', '']
+dangerPos3 = ['', '', '', 'x', 'x', 'o', '', '', '', '']
+dangerPos4 = ['', 'x', '', '', '', 'o', 'x', '', '', '']
+dangerPos5 = ['', '', '', '', 'x', 'o', '', '', '', 'x']
+dangerPos6 = ['', '', '', '', '', 'o', 'x', 'x', '', '']
+dangerPos7 = ['', '', '', '', '', 'o', 'x', '', 'x', '']
+dangerPos8 = ['', 'x', '', '', '', 'o', '', '', 'x', '']
+dangerPos9 = ['', '', '', 'x', '', 'o', '', '', 'x', '']
+
+startX = 0
+startY = 0
+endX = 0
+endY = 0
+
+num = 1
+for y in range(1, 4):
+    for x in range(1, 4):
+        sq = Square(x, y, num)
+        square_group.add(sq)
+        squares.append(sq)
+
+        num += 1
+
+turn = 'x'
+run = True
+while run:
+    clock.tick(60)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN and turn == 'x':
+            mx, my = pygame.mouse.get_pos()
+            for s in squares:
+                s.clicked(mx, my)
+
+    Update()
+    
+#end message
+finalscore= font.render(str(score), True, (255,255,255))
+finalscoremess= font.render("Your final score: $", True, (255, 255, 255))
+thx= fontSmall.render("Thanks for playing!", True, (255, 255, 255))
+screen.blit(finalscoremess, True, (100, 250))
+screen.blit(finalscore, True, (200, 250))
+screen.blit(thx, True, (100, 325)
